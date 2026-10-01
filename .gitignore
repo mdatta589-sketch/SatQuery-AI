@@ -1,0 +1,46 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Python tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated/runtime files
+backend/temp/
+backend/uploads/
+backend/output/
+backend/logs/
+temp/
+tmp/
+logs/
+
+# Node / frontend dependencies
+node_modules/
+dist/
+build/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Generated media/documents
+*.log
+
+# Local test artifacts
+*.tmp

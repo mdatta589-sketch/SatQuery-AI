@@ -1,0 +1,366 @@
+/* =====================================================
+   SATQUERY GIS PROFESSIONAL UI
+   ===================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --app-bg: #f7f8fa;
+  --panel: #ffffff;
+  --border: #d9dde3;
+  --text: #1f2937;
+  --muted: #64748b;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #eff6ff;
+  --radius: 4px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { overflow: hidden; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--app-bg);
+  color: var(--text);
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 56px 1fr 48px;
+  overflow: hidden;
+  font-size: 13px;
+}
+
+/* ------------------------------------------------
+   TOP BAR
+------------------------------------------------ */
+.app-header {
+  grid-row: 1;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.brand i {
+  color: var(--accent);
+}
+
+.header-nav {
+  display: flex;
+  height: 100%;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  height: 100%;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s ease;
+}
+
+.nav-btn:hover {
+  color: var(--text);
+}
+
+.nav-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.header-status {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: var(--app-bg);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+/* ------------------------------------------------
+   APP BODY
+------------------------------------------------ */
+.app-html { overflow: hidden; }
+
+.app-body {
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: 280px 1fr 320px;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------
+   PANELS
+------------------------------------------------ */
+.panel-left {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.panel-right {
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.label-text {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.value-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.value-text.mono {
+  font-family: monospace;
+}
+
+/* ------------------------------------------------
+   COMPONENTS
+------------------------------------------------ */
+.btn {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-secondary:hover {
+  background: var(--app-bg);
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.btn-icon:hover {
+  background: var(--app-bg);
+}
+
+.form-control {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius);
+  width: 100%;
+  font-family: inherit;
+  background: #fff;
+  color: var(--text);
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-group {
+  margin-bottom: 8px;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+/* ------------------------------------------------
+   LAYER LIST
+------------------------------------------------ */
+.layer-list {
+  list-style: none;
+  margin-top: 12px;
+}
+.layer-list li {
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.layer-list li:last-child { border-bottom: none; }
+.layer-title {
+  display: block;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text);
+}
+.layer-subtitle {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ------------------------------------------------
+   MAP AREA
+------------------------------------------------ */
+.map-area {
+  position: relative;
+  background: #e2e8f0;
+}
+#map {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.map-tools {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Override leaflet default zoom to hide it since we have custom */
+.leaflet-control-zoom {
+  display: none !important;
+}
+
+/* ------------------------------------------------
+   FOOTER (Query & Status)
+------------------------------------------------ */
+.app-footer {
+  grid-row: 3;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.query-console {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 400px;
+}
+.query-console input {
+  flex: 1;
+}
+
+.status-bar {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------
+   INSPECTOR PROPERTIES
+------------------------------------------------ */
+.prop-row {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.prop-row .label-text {
+  width: 100px;
+  flex-shrink: 0;
+}
+.prop-row .value-text {
+  flex: 1;
+}
+.prop-grid {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 12px;
+}
+.prop-col {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
