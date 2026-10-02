@@ -116,6 +116,7 @@ class RemoteGroundingProvider(GroundingProvider):
                     return evidence_list, execution_info
                 else:
                     logger.error(f"Remote grounding provider HTTP {response.status_code}: {response.text[:200]}")
+                    error_state["error"]["message"] = f"HTTP {response.status_code}: {response.text[:200]}"
                     return [], error_state
                     
         except httpx.TimeoutException:
