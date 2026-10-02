@@ -275,7 +275,7 @@ function selectLayer(layerId) {
   if (!layer) return;
   currentLayer = layer;
   
-  const vqaLabel = document.getElementById('vqa-selected-image');
+  const vqaLabel = document.getElementById('vqa-selected-image-panel');
   if (vqaLabel) vqaLabel.textContent = layer.name;
 
   // Update UI (highlight selected item and sync checkboxes)
@@ -921,7 +921,7 @@ function setupEventListeners() {
                 resolution: currentLayer.metadata?.resolution ? `${Math.abs(currentLayer.metadata.resolution).toFixed(0)} m` : '-'
             } : null,
             vqa: document.getElementById('vqa-answer').textContent !== '-' && document.getElementById('vqa-answer').textContent !== 'Analyzing satellite image...' ? {
-                question: document.getElementById('query-input').value,
+                question: document.getElementById('query-input-panel').value,
                 answer: document.getElementById('vqa-answer').textContent,
                 confidence_status: document.getElementById('vqa-confidence').textContent,
                 execution: {
@@ -972,8 +972,7 @@ function setupEventListeners() {
     }
 });
 
-  // ==== NEW GIS NAVIGATION ====
-  const tabs = ['data', 'analysis', 'export', 'settings'];
+  const tabs = ['data', 'analysis', 'query', 'export', 'settings'];
   tabs.forEach(tab => {
       const navEl = document.getElementById(`nav-${tab}`);
       if (navEl) {
@@ -995,9 +994,6 @@ function setupEventListeners() {
           });
       }
   });
-
-  const queryNav = document.getElementById('nav-query');
-  if (queryNav) queryNav.addEventListener('click', () => document.getElementById('query-input').focus());
 
   
   const projNav = document.getElementById('nav-project');
@@ -1045,7 +1041,7 @@ function setupEventListeners() {
   }
 
   window.updateVqaUI = function() {
-      const vqaLabel = document.getElementById('vqa-selected-image');
+      const vqaLabel = document.getElementById('vqa-selected-image-panel');
       if (!vqaLabel) return;
       const ctx = getVqaContext();
       if (!ctx) {
@@ -1055,10 +1051,10 @@ function setupEventListeners() {
       }
   };
 
-  const btnQuery = document.getElementById('btn-query');
-  if (btnQuery) {
-      btnQuery.addEventListener('click', async () => {
-          const qInput = document.getElementById('query-input');
+  const btnQueryPanel = document.getElementById('btn-query-panel');
+  if (btnQueryPanel) {
+      btnQueryPanel.addEventListener('click', async () => {
+          const qInput = document.getElementById('query-input-panel');
           const q = qInput.value.trim();
           
           document.getElementById('header-status').textContent = 'VALIDATING...';
@@ -1084,8 +1080,30 @@ function setupEventListeners() {
               return;
           }
           
-          // Switch to Analysis tab to see results
-          document.getElementById('nav-analysis').click();
+          document.getElementById('gpu-offline-banner').style.display = 'none';
+          
+          const historyContainer = document.getElementById('query-history-container');
+          document.getElementById('query-history-empty').style.display = 'none';
+          
+          const historyItem = document.createElement('div');
+          historyItem.style.background = 'var(--app-bg)';
+          historyItem.style.border = '1px solid var(--border)';
+          historyItem.style.borderRadius = 'var(--radius)';
+          historyItem.style.padding = '12px';
+          
+          const qDiv = document.createElement('div');
+          qDiv.style.fontWeight = '600';
+          qDiv.style.color = 'var(--text)';
+          qDiv.style.marginBottom = '8px';
+          qDiv.textContent = "Q: " + q;
+          
+          const aDiv = document.createElement('div');
+          aDiv.style.color = 'var(--text-light)';
+          aDiv.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right: 6px;"></i> Analyzing satellite image...';
+          
+          historyItem.appendChild(qDiv);
+          historyItem.appendChild(aDiv);
+          historyContainer.prepend(historyItem);
           
           const resultSec = document.getElementById('vqa-result-section');
           resultSec.style.display = 'block';
@@ -1096,7 +1114,7 @@ function setupEventListeners() {
           document.getElementById('vqa-evidence').textContent = "-";
           document.getElementById('vqa-execution').textContent = "-";
           
-          btnQuery.disabled = true;
+          btnQueryPanel.disabled = true;
           document.getElementById('header-status').textContent = 'RUNNING...';
           
           let aoiData = null;
@@ -1137,7 +1155,18 @@ function setupEventListeners() {
               }
               
               document.getElementById('header-status').textContent = data.execution?.status === 'error' ? 'ERROR' : 'SUCCESS';
-              document.getElementById('vqa-answer').textContent = data.answer || "No answer returned.";
+              
+              const ansText = data.answer || "No answer returned.";
+              aDiv.innerHTML = `<span style="color: var(--accent);"><i class="fa-solid fa-reply" style="margin-right: 6px;"></i> ${ansText}</span>`;
+              
+              const statusDiv = document.createElement('div');
+              statusDiv.style.fontSize = '11px';
+              statusDiv.style.color = 'var(--text-muted)';
+              statusDiv.style.marginTop = '8px';
+              statusDiv.textContent = `Provider: ${data.execution?.provider || 'remote'} | Model: ${data.execution?.model || 'unknown'} | Status: ${data.execution?.status || 'success'}`;
+              historyItem.appendChild(statusDiv);
+              
+              document.getElementById('vqa-answer').textContent = ansText;
               document.getElementById('vqa-confidence').textContent = data.confidence_status === 'not_calibrated' ? "Not calibrated" : `${data.confidence}`;
               
               // Handle Evidence
@@ -1153,44 +1182,30 @@ function setupEventListeners() {
                       div.innerHTML = `<strong>${ev.label}</strong><br><span style="font-size: 11px; color: var(--text-secondary);">${scoreStr}</span><br><a href="#" style="font-size:11px;">[Show on map]</a>`;
                       evidenceEl.appendChild(div);
                       
-                      // For first implementation: we just store coordinate_system = "image_pixel".
-                      // We don't necessarily draw it if it's image_pixel unless we mapped it.
-                      // The prompt says "The existing Leaflet evidence layer should draw the bounding box."
-                      // We'll leave the draw logic in place for WGS84, but for image_pixel we can skip or map.
-                      // As per prompt: "The frontend may temporarily render the geometry only if the coordinate mapping is valid for the displayed image."
-                      // We'll do a basic map if it's image_pixel and bbox, just as a placeholder since we didn't inject geographic coords from backend yet.
-                      
                       const link = div.querySelector('a');
                       link.addEventListener('click', (e) => {
                           e.preventDefault();
                           if (ev.geometry && ev.geometry.coordinate_system === 'wgs84') {
-                              // Existing wgs84 logic
                               if (ev.type === 'bbox' && ev.geometry.coordinates.length === 4) {
                                   const [x1, y1, x2, y2] = ev.geometry.coordinates;
                                   const bounds = [[y1, x1], [y2, x2]];
                                   L.rectangle(bounds, {color: '#f00', weight: 2}).bindPopup(ev.label).addTo(vqaEvidenceLayer);
                               }
                           } else if (ev.geometry && ev.geometry.coordinate_system === 'image_pixel') {
-                              // Temporary image_pixel mapping
                                 if (currentLayer && currentLayer.bounds) {
                                     if (ev.type === 'bbox' && ev.geometry.coordinates.length === 4) {
                                         const [x1, y1, x2, y2] = ev.geometry.coordinates;
                                         const w = 1024;
                                         const h = 1024;
-                                        
-                                        // If an AOI was used for VQA, grounding pixels are relative to the AOI, not the full scene!
-                                        let bounds = currentLayer.bounds; // [[south, west], [north, east]]
+                                        let bounds = currentLayer.bounds;
                                         if (aoiData) {
                                             bounds = [[aoiData.south, aoiData.west], [aoiData.north, aoiData.east]];
                                         }
-                                        
                                         const s = bounds[0][0], w_ = bounds[0][1], n = bounds[1][0], e_ = bounds[1][1];
-                                        
                                         const lat1 = n - (y1 / h) * (n - s);
                                         const lon1 = w_ + (x1 / w) * (e_ - w_);
                                         const lat2 = n - (y2 / h) * (n - s);
                                         const lon2 = w_ + (x2 / w) * (e_ - w_);
-                                      
                                       L.rectangle([[lat1, lon1], [lat2, lon2]], {color: '#f00', weight: 2}).bindPopup(`${ev.label} (${scoreStr})`).addTo(vqaEvidenceLayer);
                                   }
                               } else {
@@ -1217,12 +1232,15 @@ function setupEventListeners() {
               
               let errMsg = e.message;
               if (errMsg.includes('<html') || errMsg.includes('ERR_NGROK')) {
-                  errMsg = "Remote VQA provider is currently unavailable.";
+                  errMsg = "Remote GPU inference service is currently unavailable.";
+                  document.getElementById('gpu-offline-banner').style.display = 'block';
               }
+              
+              aDiv.innerHTML = `<span style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> Unable to complete this query.<br><br><span style="font-size: 11px;">Reason:<br>${errMsg}</span></span>`;
               
               document.getElementById('vqa-execution').textContent = `Task: vqa\nModel: google/paligemma-3b-ft-rsvqa-hr-224\nProvider: remote\nStatus: error\n\nMessage:\n${errMsg}`;
           } finally {
-              btnQuery.disabled = false;
+              btnQueryPanel.disabled = false;
           }
       });
   }
