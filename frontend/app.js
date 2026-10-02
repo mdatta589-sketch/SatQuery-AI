@@ -985,11 +985,11 @@ function setupEventListeners() {
                   const p = document.getElementById(`${t}-panel`);
                   if (p) p.style.display = 'none';
               });
-              e.target.classList.add('active');
+              navEl.classList.add('active');
               
               const p = document.getElementById(`${tab}-panel`);
               if (p) {
-                  p.style.display = tab === 'data' ? 'flex' : 'block';
+                  p.style.display = (tab === 'data' || tab === 'query') ? 'flex' : 'block';
               }
           });
       }
@@ -1052,6 +1052,16 @@ function setupEventListeners() {
   };
 
   const btnQueryPanel = document.getElementById('btn-query-panel');
+  const qInputPanel = document.getElementById('query-input-panel');
+  if (qInputPanel && btnQueryPanel) {
+      qInputPanel.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              btnQueryPanel.click();
+          }
+      });
+  }
+
   if (btnQueryPanel) {
       btnQueryPanel.addEventListener('click', async () => {
           const qInput = document.getElementById('query-input-panel');

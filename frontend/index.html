@@ -253,17 +253,15 @@
               Remote AI inference is currently unavailable. Other SatQuery analysis tools remain available.
           </div>
           
-          <textarea id="query-input-panel" class="form-control" placeholder="Ask a question about this satellite image..." style="height: 80px; resize: vertical; margin-bottom: 8px; padding: 8px; font-family: inherit;"></textarea>
-          
-          <div style="position: relative; margin-top: 4px;">
-              <button class="btn btn-primary" id="btn-query-panel" style="width: 100%; position: relative; z-index: 2;">
-                  <i class="fa-solid fa-sparkles" style="margin-right: 6px;"></i> Ask SatQuery
-              </button>
-              <!-- Body Behind -->
-              <img src="assets/einstein_transparent.png" alt="Einstein AI" style="width: 70px; height: 70px; object-fit: contain; pointer-events: none; position: absolute; right: -5px; bottom: 0px; z-index: 1;" />
-              <!-- Fingers In Front -->
-              <img src="assets/einstein_transparent.png" alt="" style="width: 70px; height: 70px; object-fit: contain; pointer-events: none; position: absolute; right: -5px; bottom: 0px; z-index: 3; clip-path: polygon(0 35%, 35% 35%, 35% 100%, 0 100%);" />
+          <div style="display: flex; justify-content: flex-end; margin-bottom: -15px; position: relative; z-index: 2; pointer-events: none; padding-right: 10px;">
+              <img src="assets/einstein_transparent.png" alt="Einstein AI" style="width: 70px; height: 70px; object-fit: contain;" />
           </div>
+          
+          <textarea id="query-input-panel" class="form-control" placeholder="Ask a question about this satellite image..." style="position: relative; z-index: 1; height: 80px; resize: vertical; margin-bottom: 8px; padding: 8px; font-family: inherit;"></textarea>
+          
+          <button class="btn btn-primary" id="btn-query-panel" style="width: 100%;">
+              <i class="fa-solid fa-sparkles" style="margin-right: 6px;"></i> Ask SatQuery
+          </button>
         </div>
         
         <div class="panel-section" id="query-history-section" style="flex: 1; overflow-y: auto;">
