@@ -16,6 +16,11 @@ from app.api.analysis import router as analysis_router
 from app.api.vqa import router as vqa_router
 from app.api.grounding import router as grounding_router
 from app.api.export import router as export_router
+from app.api.routing import router as routing_router
+from app.api.change import router as change_router
+from app.api.cross_modal import router as cross_modal_router
+from app.api.registry import router as registry_router
+from app.api.benchmark import router as benchmark_router
 
 
 app = FastAPI(
@@ -44,6 +49,11 @@ app.include_router(analysis_router)
 app.include_router(vqa_router)
 app.include_router(grounding_router)
 app.include_router(export_router)
+app.include_router(routing_router)
+app.include_router(change_router)
+app.include_router(cross_modal_router)
+app.include_router(registry_router)
+app.include_router(benchmark_router)
 
 
 @app.get("/")

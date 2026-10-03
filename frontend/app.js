@@ -1080,11 +1080,6 @@ function setupEventListeners() {
               alert("No satellite image selected.");
               return;
           }
-          if (ctx.representation !== 'rgb') {
-              document.getElementById('header-status').textContent = 'ERROR: Incompatible image';
-              alert("VQA currently requires an RGB image. Select Sentinel-2 True Color or upload an RGB image.");
-              return;
-          }
           if (!q) {
               document.getElementById('header-status').textContent = 'ERROR: Empty question';
               alert("Enter a question about the selected image.");
@@ -1131,7 +1126,7 @@ function setupEventListeners() {
           document.getElementById('vqa-execution').textContent = "-";
           
           btnQueryPanel.disabled = true;
-          document.getElementById('header-status').textContent = 'RUNNING...';
+          document.getElementById('header-status').textContent = 'RUNNING ROUTER...';
           
           let aoiData = null;
         if (currentAOI) {
@@ -1150,27 +1145,63 @@ function setupEventListeners() {
         try {
             if (vqaEvidenceLayer) vqaEvidenceLayer.clearLayers();
             
-            const res = await fetch('http://127.0.0.1:8000/api/v1/vqa/query', {
+            // 1. Route the query
+            const routeRes = await fetch('http://127.0.0.1:8000/api/v1/query/route', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    image_id: currentLayer.id,
-                    image_type: ctx.image_type,
-                    source: ctx.source,
-                    modality: ctx.modality,
-                    representation: ctx.representation,
-                    question: q,
-                    mode: 'vqa',
-                    aoi: aoiData
-                })
+                body: JSON.stringify({ question: q })
             });
+            const routeData = await routeRes.json();
+            const task = routeData.task || 'vqa';
+            
+            document.getElementById('header-status').textContent = `RUNNING TASK: ${task.toUpperCase()}`;
+            
+            let res;
+            if (task === 'change' || task === 'change_vqa') {
+                res = await fetch('http://127.0.0.1:8000/api/v1/change/vqa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_before_id: currentLayer.id,
+                        image_after_id: currentLayer.id, // Stub for now
+                        question: q,
+                        aoi: aoiData
+                    })
+                });
+            } else if (task === 'cross_modal') {
+                res = await fetch('http://127.0.0.1:8000/api/v1/cross-modal/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        optical_image_id: currentLayer.id,
+                        sar_image_id: currentLayer.id, // Stub for now
+                        query: q,
+                        aoi: aoiData
+                    })
+                });
+            } else {
+                res = await fetch('http://127.0.0.1:8000/api/v1/vqa/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        image_id: currentLayer.id,
+                        image_type: ctx.image_type,
+                        source: ctx.source,
+                        modality: ctx.modality,
+                        representation: ctx.representation,
+                        question: q,
+                        mode: 'vqa',
+                        aoi: aoiData
+                    })
+                });
+            }
               
               const data = await res.json();
               if (!res.ok) {
-                  throw new Error(data.detail || `HTTP Error ${res.status}`);
+                  throw new Error(data.detail || data.error || `HTTP Error ${res.status}`);
               }
               
-              document.getElementById('header-status').textContent = data.execution?.status === 'error' ? 'ERROR' : 'SUCCESS';
+              document.getElementById('header-status').textContent = data.status === 'error' || data.execution?.status === 'error' ? 'ERROR' : 'SUCCESS';
               
               const ansText = data.answer || "No answer returned.";
               aDiv.innerHTML = `<span style="color: var(--accent);"><i class="fa-solid fa-reply" style="margin-right: 6px;"></i> ${ansText}</span>`;
