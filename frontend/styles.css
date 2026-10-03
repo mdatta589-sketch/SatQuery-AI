@@ -32,6 +32,7 @@ body {
   grid-template-rows: 56px 1fr 48px;
   overflow: hidden;
   font-size: 13px;
+  position: relative;
 }
 
 /* ------------------------------------------------
@@ -121,6 +122,16 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: box-shadow 0.2s ease;
+}
+
+body.query-active::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  box-shadow: inset 0 0 40px rgba(37, 99, 235, 0.35);
 }
 
 .panel-right {

@@ -991,6 +991,12 @@ function setupEventListeners() {
               if (p) {
                   p.style.display = (tab === 'data' || tab === 'query') ? 'flex' : 'block';
               }
+              
+              if (tab === 'query') {
+                  document.body.classList.add('query-active');
+              } else {
+                  document.body.classList.remove('query-active');
+              }
           });
       }
   });
@@ -1277,11 +1283,47 @@ function setupEventListeners() {
   const mcLocate = document.getElementById('mc-locate');
   if (mcLocate) mcLocate.addEventListener('click', () => map.locate({setView: true, maxZoom: 16}));
 
+  const mcFitToScreen = document.getElementById('mc-fit-to-screen');
+  if (mcFitToScreen) {
+      mcFitToScreen.addEventListener('click', () => {
+          if (currentAOI && currentAOI.geometry_type === 'Polygon' && drawnItems && drawnItems.getLayers().length > 0) {
+              map.fitBounds(drawnItems.getBounds());
+          } else if (drawnItems && drawnItems.getLayers().length > 0) {
+              map.fitBounds(drawnItems.getBounds());
+          } else if (currentLayer && currentLayer.bounds) {
+              map.fitBounds(currentLayer.bounds);
+          } else {
+              const msg = document.createElement('div');
+              msg.textContent = "No spatial layer available to fit.";
+              msg.style.position = 'absolute';
+              msg.style.top = '20px';
+              msg.style.left = '50%';
+              msg.style.transform = 'translateX(-50%)';
+              msg.style.background = 'rgba(26,26,26,0.8)';
+              msg.style.color = '#fff';
+              msg.style.padding = '8px 16px';
+              msg.style.borderRadius = 'var(--radius)';
+              msg.style.zIndex = '10000';
+              msg.style.fontSize = '12px';
+              msg.style.pointerEvents = 'none';
+              document.querySelector('.map-area').appendChild(msg);
+              setTimeout(() => msg.remove(), 2500);
+          }
+      });
+  }
+
   const mcFit = document.getElementById('mc-fit');
   if (mcFit) {
       mcFit.addEventListener('click', () => {
-          if (currentLayer && currentLayer.bounds) {
-              map.fitBounds(currentLayer.bounds);
+          const mapEl = document.getElementById('map');
+          if (!document.fullscreenElement) {
+              if (mapEl.requestFullscreen) {
+                  mapEl.requestFullscreen();
+              }
+          } else {
+              if (document.exitFullscreen) {
+                  document.exitFullscreen();
+              }
           }
       });
   }
