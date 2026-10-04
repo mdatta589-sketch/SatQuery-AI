@@ -44,3 +44,5 @@ Thumbs.db
 
 # Local test artifacts
 *.tmp
+backend/scratch_test.py
+backend/scratch_vqa_test.py

@@ -8,10 +8,10 @@ class QueryRouter:
             'tell me the difference', 'difference between these images', 'compare and tell me the difference',
             'where did the change occur', 'how much changed', 'how much of the area changed',
             'identify changed areas', 'detect changes', 'show changes', 'is there significant change',
-            'describe the changes', 'compare'
+            'describe the changes', 'compare before and after', 'compare'
         ]
         
-        if any(kw in q for kw in change_keywords) or ('change' in q and 'vegetation' not in q and 'building' not in q or ('change' in q and ('compare' in q or 'between' in q))):
+        if any(kw in q for kw in change_keywords) or ('change' in q and 'vegetation' not in q and 'building' not in q) or ('change' in q and ('compare' in q or 'between' in q)):
             # A more robust check. We want to prioritize change_vqa for comparison/temporal change.
             return {"task": "change_vqa", "confidence": 0.9, "reason": "Matched Change-VQA intent"}
             
@@ -27,14 +27,14 @@ class QueryRouter:
         ndvi_keywords = [
             'analyze vegetation', 'show vegetation', 'vegetation analysis', 'calculate ndvi',
             'show ndvi', 'what is the vegetation condition', 'identify vegetation', 'vegetation health',
-            'analyze plant cover', 'how much vegetation is present', 'vegetation', 'ndvi', 'plant'
+            'analyze plant cover', 'how much vegetation is present', 'vegetation', 'vegitation', 'ndvi', 'plant', 'greenery'
         ]
         if any(kw in q for kw in ndvi_keywords):
             return {"task": "ndvi", "confidence": 0.9, "reason": "Matched NDVI intent"}
             
         # 3. GROUNDING
         grounding_keywords = [
-            'show the', 'locate', 'detect', 'find', 'highlight', 'where are the', 'show me the'
+            'show', 'locate', 'detect', 'find', 'highlight', 'where are', 'show me'
         ]
         # Make sure it's an action indicating grounding, not just "is there..."
         if any(q.startswith(kw) or f" {kw} " in f" {q} " for kw in grounding_keywords):

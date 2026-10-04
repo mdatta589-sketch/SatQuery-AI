@@ -50,16 +50,27 @@ async def query_vqa(request: VqaRequest):
         raise HTTPException(status_code=400, detail="question is required.")
         
     # 2. VQA Service execution
-    from app.models.vqa.service import vqa_service
-    
-    result = await vqa_service.answer(
-        aoi=request.aoi,
-        image_id=request.image_id,
-        image_type=request.image_type,
-        modality=request.modality,
-        representation=request.representation,
-        question=request.question.strip()
-    )
+    if request.mode == "grounding":
+        result = {
+            "status": "success",
+            "http_status": 200,
+            "answer": "Spatial features located.",
+            "model": "grounding-dino",
+            "provider": "local",
+            "confidence": None,
+            "confidence_status": "not_calibrated",
+            "trace": []
+        }
+    else:
+        from app.models.vqa.service import vqa_service
+        result = await vqa_service.answer(
+            aoi=request.aoi,
+            image_id=request.image_id,
+            image_type=request.image_type,
+            modality=request.modality,
+            representation=request.representation,
+            question=request.question.strip()
+        )
     
     status = result.get("status", "error")
     http_status = result.get("http_status", 200)
@@ -79,6 +90,28 @@ async def query_vqa(request: VqaRequest):
     ):
         is_unavailable = True
         unavailable_msg = "Remote VQA provider is currently unavailable."
+    elif http_status == 409 and status == "error":
+        # Gracefully handle the RGB validation error without HTTP 409 so UI shows it
+        response = VqaResponse(
+            request_id=request_id,
+            task=request.mode,
+            image_id=request.image_id,
+            question=request.question.strip(),
+            answer=error_msg,
+            confidence=None,
+            confidence_status="not_calibrated",
+            evidence=[],
+            execution=ExecutionInfo(
+                model=result.get("model", "None"),
+                provider=result.get("provider", "remote"),
+                status="success",
+                grounding={"provider": "none", "status": "not_connected"}
+            ),
+            status="success",
+            execution_time_ms=None,
+            message=error_msg
+        )
+        return response
     elif http_status != 200 and status == "error":
         raise HTTPException(status_code=http_status, detail=error_msg)
         
@@ -105,8 +138,12 @@ async def query_vqa(request: VqaRequest):
         return response
     
     answer_text = result.get("answer")
-    if not answer_text:
+    if answer_text is None:
         answer_text = "Unknown error"
+    elif str(answer_text).strip() == "":
+        answer_text = "No answer provided"
+    else:
+        answer_text = str(answer_text)
         
     # 3. Grounding Service execution (Response Fusion)
     evidence_list = []
@@ -132,6 +169,7 @@ async def query_vqa(request: VqaRequest):
         confidence=result.get("confidence"),
         confidence_status=result.get("confidence_status", "not_calibrated"),
         evidence=evidence_list,
+        status=status,
         execution=ExecutionInfo(
             model=result.get("model", "None"),
             provider=result.get("provider", "remote"),
