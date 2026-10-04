@@ -1,4 +1,4 @@
-﻿import datetime
+import datetime
 from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -51,21 +51,6 @@ def search_catalog(request: CatalogSearchRequest):
             asset_key = "visual"
             asset_href = item.assets.get("visual", item.assets.get("rendered_preview")).href
             
-            if "visual" in item.assets:
-                try:
-                    import rasterio
-                    from rasterio.warp import transform_bounds
-                    with rasterio.Env(CPL_VSIL_CURL_ALLOWED_EXTENSIONS='tif'):
-                        with rasterio.open(asset_href) as src:
-                            width = src.width
-                            height = src.height
-                            crs = str(src.crs)
-                                                       # Transform native bounds to EPSG:4326 for Leaflet
-                            geo_bounds = transform_bounds(src.crs, "EPSG:4326", *src.bounds)
-                            raster_bounds = list(geo_bounds)
-                except Exception as ex:
-                    print(f"Error reading raster {asset_href}: {ex}")
-            
             results.append({
                 "scene_id": item.id,
                 "datetime": item.datetime.isoformat(),
@@ -107,6 +92,7 @@ def get_scene_metadata(scene_id: str, collection: str = "sentinel-2-l2a"):
         if not item:
             raise HTTPException(status_code=404, detail="Scene not found")
             
+        preview_asset = item.assets.get("rendered_preview") or item.assets.get("visual")
         visual_url = item.assets["visual"].href
         
         with rasterio.Env(CPL_VSIL_CURL_ALLOWED_EXTENSIONS='tif'):
@@ -127,6 +113,12 @@ def get_scene_metadata(scene_id: str, collection: str = "sentinel-2-l2a"):
                 west, south, east, north = geo_bounds
                 
                 return {
+                    "id": item.id,
+                    "datetime": item.datetime.isoformat() if item.datetime else None,
+                    "bbox": item.bbox,
+                    "eo:cloud_cover": item.properties.get("eo:cloud_cover"),
+                    "assets": {k: v.to_dict() for k, v in item.assets.items()},
+                    "preview_url": f"http://127.0.0.1:8000/api/v1/catalog/scene/{scene_id}/preview.png",
                     "image_url": f"http://127.0.0.1:8000/api/v1/catalog/scene/{scene_id}/preview.png",
                     "bounds": [
                         [south, west],
@@ -139,8 +131,8 @@ def get_scene_metadata(scene_id: str, collection: str = "sentinel-2-l2a"):
                     "source_bounds": list(src.bounds),
                     "display_width": width,
                     "display_height": height,
-                    "asset_key": "visual",
-                    "asset_href": visual_url
+                    "asset_key": "rendered_preview",
+                    "asset_href": preview_asset.href
                 }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

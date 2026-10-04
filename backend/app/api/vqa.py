@@ -29,11 +29,14 @@ class VqaResponse(BaseModel):
     task: str
     image_id: str
     question: str
-    answer: str
+    answer: Optional[str] = None
     confidence: Optional[float] = None
     confidence_status: str
     evidence: List[Dict[str, Any]]
     execution: ExecutionInfo
+    execution_time_ms: Optional[float] = None
+    message: Optional[str] = None
+    status: Optional[str] = None
 
 @router.post("/query", response_model=VqaResponse)
 async def query_vqa(request: VqaRequest):
@@ -61,13 +64,48 @@ async def query_vqa(request: VqaRequest):
     status = result.get("status", "error")
     http_status = result.get("http_status", 200)
     
-    if http_status != 200 and status == "error":
-        raise HTTPException(status_code=http_status, detail=result.get("error", "Unknown error"))
+    is_unavailable = False
+    unavailable_msg = ""
+    error_msg = result.get("error", "Unknown error")
+    
+    if status == "not_configured":
+        is_unavailable = True
+        unavailable_msg = "Remote VQA provider is not configured."
+    elif status == "error" and (
+        http_status in [502, 504] or 
+        "unavailable" in error_msg.lower() or 
+        "timed out" in error_msg.lower() or 
+        "connection" in error_msg.lower()
+    ):
+        is_unavailable = True
+        unavailable_msg = "Remote VQA provider is currently unavailable."
+    elif http_status != 200 and status == "error":
+        raise HTTPException(status_code=http_status, detail=error_msg)
+        
+    if is_unavailable:
+        response = VqaResponse(
+            request_id=request_id,
+            task=request.mode,
+        image_id=request.image_id,
+            question=request.question.strip(),
+            answer=None,
+            confidence=None,
+            confidence_status="not_calibrated",
+            evidence=[],
+            execution=ExecutionInfo(
+                model=result.get("model", "google/paligemma-3b-ft-rsvqa-hr-224"),
+                provider=result.get("provider", "remote"),
+                status="unavailable",
+                grounding={"provider": "none", "status": "not_connected"}
+            ),
+            status="unavailable",
+            execution_time_ms=None,
+            message=unavailable_msg
+        )
+        return response
     
     answer_text = result.get("answer")
-    if not answer_text and status == "not_configured":
-        answer_text = "VQA provider not configured."
-    elif not answer_text:
+    if not answer_text:
         answer_text = "Unknown error"
         
     # 3. Grounding Service execution (Response Fusion)
@@ -87,7 +125,7 @@ async def query_vqa(request: VqaRequest):
     
     response = VqaResponse(
         request_id=request_id,
-        task="vqa",
+        task=request.mode,
         image_id=request.image_id,
         question=request.question.strip(),
         answer=answer_text,
@@ -104,7 +142,7 @@ async def query_vqa(request: VqaRequest):
     
     # 4. Logging
     exec_time = time.time() - start_time
-    logger.info(f"request_id={request_id} image_id={request.image_id} type={request.image_type} repr={request.representation} source={request.source} modality={request.modality} task=vqa status={status} model={result.get('model')} execution_time={exec_time:.3f}s question='{request.question}'")
+    logger.info(f"request_id={request_id} image_id={request.image_id} type={request.image_type} repr={request.representation} source={request.source} modality={request.modality} task={request.mode} status={status} model={result.get('model')} execution_time={exec_time:.3f}s question='{request.question}'")
     logger.info(f"Execution trace: {result.get('trace')}")
     logger.info(f"Grounding trace: {grounding_trace}")
         

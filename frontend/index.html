@@ -247,6 +247,33 @@
           <div style="font-size: 11px; color: var(--text-muted); margin-top: 12px; margin-bottom: 8px;">
               Image: <span id="vqa-selected-image-panel" style="color: var(--accent-color); font-weight: 600;">None</span>
           </div>
+
+          <div id="change-analysis-controls" style="margin-bottom: 12px; font-size: 11px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: var(--radius);">
+              <div style="font-weight: 600; color: var(--text); margin-bottom: 8px;">CHANGE ANALYSIS CONTEXT</div>
+              <div id="change-analysis-message" style="color: var(--text-muted);">Upload two compatible satellite images to perform change analysis.</div>
+              <div id="change-analysis-selectors" style="display: none; flex-direction: column; gap: 8px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">
+                      <label style="color: var(--text-muted); font-weight: 600;">Case Study:</label>
+                      <select id="change-case-study" class="form-control" style="width: 70%; font-size: 11px; padding: 4px;">
+                          <option value="none">Custom / Live STAC Search</option>
+                          <option value="kancha">Kancha Gachibowli, Hyderabad (2025)</option>
+                      </select>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="color: var(--text-muted);">Before:</label>
+                      <select id="change-before-select" class="form-control" style="width: 75%; font-size: 11px; padding: 4px;"></select>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <label style="color: var(--text-muted);">After:</label>
+                      <select id="change-after-select" class="form-control" style="width: 75%; font-size: 11px; padding: 4px;"></select>
+                  </div>
+                  <div id="case-study-vis-toggles" style="display: none; justify-content: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1);">
+                      <button id="btn-vis-before" class="btn" style="flex: 1; font-size: 10px; padding: 4px;">View Before</button>
+                      <button id="btn-vis-after" class="btn" style="flex: 1; font-size: 10px; padding: 4px;">View After</button>
+                      <button id="btn-vis-change" class="btn" style="flex: 1; font-size: 10px; padding: 4px;">View Change</button>
+                  </div>
+              </div>
+          </div>
           
           <div id="gpu-offline-banner" style="display: none; background-color: #fee2e2; border: 1px solid #f87171; color: #991b1b; padding: 10px; border-radius: var(--radius); font-size: 11px; margin-bottom: 12px;">
               <strong><i class="fa-solid fa-triangle-exclamation"></i> GPU inference service offline</strong><br>
@@ -425,6 +452,6 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-  <script src="app.js?v=20260925"></script>
+  <script src="app.js?v=20261004y"></script>
 </body>
 </html>

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SatQuery AI – GIS Workbench</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  
+  <header class="app-header">
+    <div class="brand">
+      <i class="fa-solid fa-satellite-dish"></i>
+      <span class="brand-title">SatQuery AI</span>
+    </div>
+    
+    <nav class="header-nav">
+      <button class="nav-btn" id="nav-project">Project</button>
+      <button class="nav-btn active" id="nav-data">Data</button>
+      <button class="nav-btn" id="nav-analysis">Analysis</button>
+      <button class="nav-btn" id="nav-query">Query</button>
+      <button class="nav-btn" id="nav-export">Export</button>
+      <button class="nav-btn" id="nav-settings">Settings</button>
+    </nav>
+    
+    <div class="header-status" id="header-status">
+      Ready
+    </div>
+  </header>
+
+  <div class="app-body">
+    
+    <aside class="panel-left">
+      <div id="data-panel" class="panel-content">
+        
+        <div class="panel-section">
+          <h2 class="panel-title">DATA</h2>
+          <button class="btn btn-secondary" id="btn-add-data" style="width: 100%; margin-top: 12px; margin-bottom: 12px;">
+            <i class="fa-solid fa-plus" style="margin-right: 6px;"></i> Add Data
+          </button>
+          
+          <p id="no-data-msg" class="label-text">No datasets loaded.</p>
+          <div id="layer-groups-container">
+            <div id="group-uploaded" style="display:none; margin-bottom: 16px;">
+              <div class="label-text" style="font-weight: 600; margin-bottom: 8px;">UPLOADED DATA</div>
+              <ul class="layer-list" id="list-uploaded"></ul>
+            </div>
+            
+            <div id="group-stac" style="display:none; margin-bottom: 16px;">
+              <div class="label-text" style="font-weight: 600; margin-bottom: 8px;">SATELLITE SCENES</div>
+              <ul class="layer-list" id="list-stac"></ul>
+            </div>
+
+            <div id="group-analysis" style="display:none; margin-bottom: 16px;">
+              <div class="label-text" style="font-weight: 600; margin-bottom: 8px;">ANALYSES</div>
+              <ul class="layer-list" id="list-analysis"></ul>
+            </div>
+          </div>
+          <div class="label-text" style="font-weight: 600; margin-bottom: 8px;">REFERENCE</div>
+          <ul class="layer-list">
+            <li style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="basemap-toggle" checked />
+              <div style="flex: 1;">
+                <span class="layer-title">Basemap</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="panel-section">
+          <h2 class="panel-title">SEARCH CATALOG</h2>
+          <div class="form-group" style="margin-top: 12px;">
+             <label class="label-text">Start Date</label>
+             <input type="date" id="stac-start-date" class="form-control" value="2026-01-01" />
+          </div>
+          <div class="form-group">
+             <label class="label-text">End Date</label>
+             <input type="date" id="stac-end-date" class="form-control" value="2026-12-31" />
+          </div>
+          <div class="form-group">
+             <label class="label-text">Max Cloud Cover (%)</label>
+             <div style="display: flex; align-items: center; gap: 8px;">
+               <input type="range" id="stac-cloud-cover" min="0" max="100" value="10" style="flex: 1;" />
+               <span id="stac-cloud-val" class="value-text" style="width: 30px; text-align: right;">10</span>
+             </div>
+          </div>
+          <button class="btn btn-primary" id="btn-search-stac" style="width: 100%; margin-top: 8px;">
+             <i class="fa-solid fa-magnifying-glass" style="margin-right: 6px;"></i> Search Satellite Data
+          </button>
+          
+          <div id="stac-search-feedback" class="label-text" style="margin-top: 12px; color: var(--accent); font-weight: 600; display: none;"></div>
+          <div id="stac-results-container" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;"></div>
+        </div>
+
+        <!-- GENERIC RASTER CONTROLS -->
+        <div id="generic-vis-controls">
+          <div class="panel-section">
+            <h2 class="panel-title">LAYER</h2>
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="label-text">Opacity</label>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="range" id="layer-opacity" min="0" max="100" value="100" style="flex: 1;" />
+                <span id="inspector-opo" class="value-text" style="width: 40px; text-align: right;">100%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="panel-section">
+            <h2 class="panel-title">RENDER</h2>
+            <div id="render-mode-group" class="form-group" style="margin-top: 12px;">
+              <label class="label-text">Render mode</label>
+              <select id="render-mode" class="form-control">
+                  <option value="single">Single Band</option>
+                  <option value="rgb">RGB Composite</option>
+              </select>
+            </div>
+            
+            <div id="single-band-controls" class="form-group">
+                <label class="label-text">Band</label>
+                <select id="layer-band" class="form-control">
+                    <option value="">-</option>
+                </select>
+            </div>
+            
+            <div id="rgb-controls" style="display:none;">
+                <div class="form-group">
+                  <label class="label-text">Red</label>
+                  <select id="layer-red" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                  <label class="label-text">Green</label>
+                  <select id="layer-green" class="form-control"></select>
+                </div>
+                <div class="form-group">
+                  <label class="label-text">Blue</label>
+                  <select id="layer-blue" class="form-control"></select>
+                </div>
+            </div>
+          </div>
+
+          <div class="panel-section">
+            <h2 class="panel-title">VISUALIZATION</h2>
+            <div class="vis-inputs" style="margin-top: 12px; display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 1;">
+                  <label class="label-text">Min</label>
+                  <input type="number" id="vis-min" class="form-control" placeholder="auto" />
+              </div>
+              <div class="form-group" style="flex: 1;">
+                  <label class="label-text">Max</label>
+                  <input type="number" id="vis-max" class="form-control" placeholder="auto" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NDVI RASTER CONTROLS -->
+        <div id="ndvi-vis-controls" style="display:none;">
+          <div class="panel-section">
+            <h2 class="panel-title">VISUALIZATION</h2>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="label-text">Color ramp</label>
+              <select id="ndvi-colormap" class="form-control">
+                <option value="ndvi">NDVI Standard</option>
+                <option value="grayscale">Grayscale</option>
+                <option value="inverted">Inverted NDVI</option>
+              </select>
+            </div>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="label-text">Display minimum</label>
+              <input type="number" id="ndvi-vis-min" class="form-control" value="-1.0" step="0.1" />
+            </div>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="label-text">Display maximum</label>
+              <input type="number" id="ndvi-vis-max" class="form-control" value="1.0" step="0.1" />
+            </div>
+            
+            <div class="form-group" style="margin-top: 12px;">
+              <label class="label-text" style="display: flex; justify-content: space-between;">
+                Opacity
+                <span id="ndvi-opacity-val">100%</span>
+              </label>
+              <input type="range" id="ndvi-opacity" min="0" max="100" value="100" style="width: 100%; margin-top: 4px;" />
+            </div>
+            
+          </div>
+        </div>
+
+      </div>
+      
+      <!-- Placeholder panels -->
+                        <div id="analysis-panel" class="panel-content" style="display: none;">
+        <div class="panel-section">
+          <h2 class="panel-title">ANALYSIS</h2>
+          
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="label-text">Analysis type</label>
+            <select id="analysis-type" class="form-control">
+              <option value="ndvi">NDVI (Vegetation Index)</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label class="label-text">Scene</label>
+            <select id="analysis-scene" class="form-control">
+              <option value="">No scene loaded...</option>
+            </select>
+          </div>
+          
+          <button class="btn btn-primary" id="btn-calc-ndvi" style="width: 100%; margin-top: 8px;">Calculate NDVI</button>
+        </div>
+        
+        <div class="panel-section" id="vqa-result-section" style="display: none; margin-top: 16px;">
+          <h2 class="panel-title">RESULT</h2>
+          
+          <div class="inspector-field" style="margin-top: 12px;">
+              <span class="label-text">Answer</span>
+              <div id="vqa-answer" style="color: var(--text-light); margin-top: 4px;">-</div>
+          </div>
+          <div class="inspector-field" style="margin-top: 12px;">
+              <span class="label-text">Confidence</span>
+              <div id="vqa-confidence" style="color: var(--text-light); margin-top: 4px;">-</div>
+          </div>
+          <div class="inspector-field" style="margin-top: 12px;">
+              <span class="label-text">Evidence</span>
+              <div id="vqa-evidence" style="color: var(--text-light); margin-top: 4px;">-</div>
+          </div>
+          <div class="inspector-field" style="margin-top: 12px;">
+              <span class="label-text">Execution</span>
+              <div id="vqa-execution" style="color: var(--text-muted); margin-top: 4px; font-size: 11px; white-space: pre-wrap;">-</div>
+          </div>
+        </div>
+      </div>
+      <div id="export-panel" class="panel-content" style="display: none;">
+        <div class="panel-section"><h2 class="panel-title">EXPORT</h2></div>
+      </div>
+      <div id="settings-panel" class="panel-content" style="display: none;">
+        <div class="panel-section"><h2 class="panel-title">SETTINGS</h2></div>
+      </div>
+      </div>
+        </div>
+      </div>
+      </div>
+    </aside>
+
+    <main class="map-area">
+      <div id="map"></div>
+      
+      <div id="ndvi-legend" class="map-overlay" style="display: none; position: absolute; bottom: 20px; right: 60px; background: rgba(26,26,26,0.9); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius); z-index: 1000; color: var(--text); font-size: 11px; user-select: none;">
+          <div style="font-weight: 600; margin-bottom: 8px;">NDVI</div>
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 16px; background: #006837;"></div><span>1.0</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 16px; background: #66bd63;"></div><span>0.6</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 16px; background: #ffffbf;"></div><span>0.2</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 16px; background: #f46d43;"></div><span>0.0</span></div>
+              <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 16px; background: #a50026;"></div><span>-1.0</span></div>
+          </div>
+      </div>
+      
+      <div class="map-tools">
+         <!-- Leaflet zoom will be injected here if we style it, or we add our own -->
+         <button class="btn-icon" id="mc-zoom-in" title="Zoom In"><i class="fa-solid fa-plus"></i></button>
+         <button class="btn-icon" id="mc-zoom-out" title="Zoom Out" style="margin-bottom: 8px;"><i class="fa-solid fa-minus"></i></button>
+         
+         <button class="btn-icon" id="mc-locate" title="Locate"><i class="fa-solid fa-location-crosshairs"></i></button>
+         <button class="btn-icon" id="mc-fit" title="Fullscreen"><i class="fa-solid fa-expand"></i></button>
+         <button class="btn-icon" id="mc-layers" title="Layers"><i class="fa-solid fa-layer-group"></i></button>
+         <button class="btn-icon" id="mc-draw" title="Draw ROI"><i class="fa-solid fa-vector-square"></i></button>
+         <button class="btn-icon" id="mc-measure" title="Measure"><i class="fa-solid fa-ruler"></i></button>
+         <button class="btn-icon" id="mc-pixel" title="Pixel Inspector"><i class="fa-solid fa-crosshairs"></i></button>
+      </div>
+    </main>
+
+    <aside class="panel-right">
+      <div class="panel-section" style="border-bottom: none; padding-bottom: 0;">
+        <h2 class="panel-title">INSPECTOR</h2>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">SELECTED LAYER</h3>
+        <div class="prop-row">
+            <span class="value-text" id="inspector-name">-</span>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">DATASET</h3>
+        <div id="inspector-dataset-props">
+          <div class="prop-row"><span class="label-text">Sensor</span><span class="value-text" id="inspector-sensor">-</span></div>
+          <div class="prop-row"><span class="label-text">Band</span><span class="value-text" id="inspector-band">-</span></div>
+          <div class="prop-row"><span class="label-text">Dimensions</span><span class="value-text" id="inspector-dim">-</span></div>
+          <div class="prop-row"><span class="label-text">Data type</span><span class="value-text mono" id="inspector-dtype">-</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">SPATIAL REFERENCE</h3>
+        <div class="prop-row"><span class="label-text">Source CRS</span><span class="value-text mono" id="inspector-source-crs">-</span></div>
+        <div class="prop-row"><span class="label-text">Display CRS</span><span class="value-text mono" id="inspector-display-crs">-</span></div>
+        <div class="prop-row"><span class="label-text">Coordinate view</span><span class="value-text mono" id="inspector-coord-crs">-</span></div>
+        <div class="prop-row"><span class="label-text">Resolution</span><span class="value-text" id="inspector-res">-</span></div>
+        
+        <h3 class="section-title" style="margin-top: 16px;">BOUNDS</h3>
+        <div class="prop-row">
+            <span class="value-text mono" id="inspector-bounds" style="line-height: 1.5;">-</span>
+        </div>
+      </div>
+
+      <div class="panel-section" id="inspector-vis-section">
+        <h3 class="section-title">VISUALIZATION</h3>
+        
+        <div id="inspector-vis-standard">
+          <div class="prop-row"><span class="label-text">Min</span><span class="value-text mono" id="inspector-vmin">-</span></div>
+          <div class="prop-row"><span class="label-text">Max</span><span class="value-text mono" id="inspector-vmax">-</span></div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="section-title">METADATA</h3>
+        <div class="prop-row"><span class="label-text">Driver</span><span class="value-text" id="inspector-driver">-</span></div>
+        <div class="prop-row"><span class="label-text">Status</span><span class="value-text" id="inspector-status">-</span></div>
+      </div>
+
+      <div id="pixel-inspector-section" class="panel-section" style="display:none;">
+        <h3 class="section-title">PIXEL INSPECTOR</h3>
+        
+        <div id="pixel-error-section" style="display:none; margin-top: 8px;">
+          <p class="value-text" style="color: var(--text); font-weight: 600; margin-bottom: 4px;">Outside raster</p>
+          <p class="label-text">Move the cursor over the selected raster to inspect a pixel.</p>
+        </div>
+        
+        <div id="pixel-details" style="display:block; margin-top: 8px;">
+          <div class="prop-col" style="margin-bottom: 12px;"><span class="label-text">Coordinates</span><span class="value-text mono" id="pixel-coords" style="white-space: pre-line; line-height: 1.4;">-</span></div>
+          <div class="prop-col" style="margin-bottom: 12px;"><span class="label-text">Pixel</span><span class="value-text mono" id="pixel-rc" style="white-space: pre-line; line-height: 1.4;">-</span></div>
+          <div id="pixel-band-values-container"></div>
+          <div class="prop-col" style="margin-bottom: 12px;"><span class="label-text">Data type</span><span class="value-text mono" id="pixel-dtype">-</span></div>
+          <div class="prop-col" style="margin-bottom: 12px;"><span class="label-text">Resolution</span><span class="value-text" id="pixel-res">-</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="app-footer">
+    <div class="query-console">
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 5px;">
+          Mode: <strong style="color: var(--text-light);">VQA</strong> | Image: <span id="vqa-selected-image" style="color: var(--accent-color);">None</span>
+      </div>
+      <div style="display: flex; gap: 10px;">
+          <input type="text" id="query-input" class="form-control" list="query-examples" placeholder="Ask about the selected satellite image..." autocomplete="off" />
+          <datalist id="query-examples">
+            <option value="What is visible in this image?"></option>
+            <option value="Identify land-cover types."></option>
+            <option value="Analyze this image."></option>
+          </datalist>
+          <button class="btn btn-primary" id="btn-query">Ask SatQuery</button>
+      </div>
+    </div>
+    
+    <div class="status-bar" id="status-bar">
+      CRS EPSG:4326 &nbsp;|&nbsp; Zoom 2 &nbsp;|&nbsp; Center 0.0000° N, 0.0000° E
+    </div>
+  </footer>
+
+  <input type="file" id="geotiff-upload" accept=".tif,.tiff" multiple style="display:none;" />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+  <script src="app.js?v=20260925"></script>
+</body>
+</html>

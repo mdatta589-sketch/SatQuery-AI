@@ -1,0 +1,12 @@
+﻿{
+    "ndvi":  {
+                 "analysis":  "NDVI",
+                 "statistics":  null
+             },
+    "layer":  {
+                  "name":  "Test Layer"
+              },
+    "aoi":  {
+                "type":  "Polygon"
+            }
+}

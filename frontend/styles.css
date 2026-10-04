@@ -375,3 +375,8 @@ input[type="range"] {
   flex-direction: column;
   gap: 2px;
 }
+.satquery-change-legend { background: rgba(255,255,255,0.95); padding: 8px 10px; border-radius: 6px; border: 1px solid #ccc; box-shadow: 0 1px 4px rgba(0,0,0,0.2); font-size: 12px; line-height: 1.4; }
+.legend-title { font-weight: 600; margin-bottom: 5px; }
+.legend-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+.legend-color { width: 12px; height: 12px; background: rgba(255,60,60,0.7); border: 1px solid rgba(180,0,0,0.5); display: inline-block; }
+.legend-neutral { width: 12px; height: 12px; background: transparent; border: 1px solid #ccc; display: inline-block; }
