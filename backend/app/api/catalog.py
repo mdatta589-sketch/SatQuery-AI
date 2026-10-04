@@ -25,14 +25,21 @@ def search_catalog(request: CatalogSearchRequest):
         
         datetime_range = f"{request.start_date}T00:00:00Z/{request.end_date}T23:59:59Z"
         
-        search = catalog.search(
-            collections=[request.collection],
-            bbox=request.bbox,
-            datetime=datetime_range,
-            query={"eo:cloud_cover": {"lt": request.max_cloud_cover}},
-            max_items=request.limit,
-            sortby=[{"field": "datetime", "direction": "desc"}]
-        )
+        query_params = {}
+        if request.collection == "sentinel-2-l2a":
+            query_params["eo:cloud_cover"] = {"lt": request.max_cloud_cover}
+            
+        search_args = {
+            "collections": [request.collection],
+            "bbox": request.bbox,
+            "datetime": datetime_range,
+            "max_items": request.limit,
+            "sortby": [{"field": "datetime", "direction": "desc"}]
+        }
+        if query_params:
+            search_args["query"] = query_params
+            
+        search = catalog.search(**search_args)
         
         items = list(search.items())
         results = []

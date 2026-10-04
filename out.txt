@@ -1,0 +1,6 @@
+Starting script...
+Route: {'task': 'ndvi', 'confidence': 0.9, 'reason': 'Matched NDVI intent'}
+Found 1 scenes
+Selected scene: S2A_MSIL2A_20250404T051241_R019_T44QKE_20250404T105803
+Sending NDVI request...
+NDVI SUCCESS: {'scene_id': 'S2A_MSIL2A_20250404T051241_R019_T44QKE_20250404T105803', 'source_dataset': 'S2A_MSIL2A_20250404T051241_R019_T44QKE_20250404T105803', 'source_type': 'stac', 'bands_used': ['B04', 'B08'], 'analysis': 'NDVI', 'formula': '(B08 - B04) / (B08 + B04)', 'scope': 'Rectangle', 'area': 0, 'statistics': {'min': -0.21189188957214355, 'max': 0.5052781701087952, 'mean': 0.07629827409982681, 'median': 0.07003545761108398, 'total_pixel_count': 198816, 'valid_pixel_count': 198816, 'nodata_pixel_count': 0, 'vegetation_area_percentage': 0.0382262996941896}, 'threshold': {'ndvi': 0.4, 'meaning': 'Prototype vegetation interpretation threshold'}, 'image_url': 'http://127.0.0.1:8000/api/v1/analysis/result/42385c3f-92f9-484e-83da-c68422a6e4bc/image.png', 'bounds': [[17.409466286180074, 78.31941578998331], [17.450534800225828, 78.36057535610388]], 'source': {'red': 'B04', 'nir': 'B08'}}

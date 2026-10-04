@@ -15,6 +15,14 @@ class QueryRouter:
             # A more robust check. We want to prioritize change_vqa for comparison/temporal change.
             return {"task": "change_vqa", "confidence": 0.9, "reason": "Matched Change-VQA intent"}
             
+        # 1.5 CROSS MODAL
+        cross_modal_keywords = [
+            'optical and sar', 'sar and optical', 'cross modal', 'cross-modal',
+            'fuse optical', 'fuse sar', 'combine optical', 'compare optical and sar'
+        ]
+        if any(kw in q for kw in cross_modal_keywords):
+            return {"task": "cross_modal", "confidence": 0.9, "reason": "Matched Cross-Modal intent"}
+            
         # 2. NDVI / VEGETATION
         ndvi_keywords = [
             'analyze vegetation', 'show vegetation', 'vegetation analysis', 'calculate ndvi',

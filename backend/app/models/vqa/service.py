@@ -1,5 +1,6 @@
 import logging
 import os
+import asyncio
 from app.models.vqa.remote_provider import RemoteVQAProvider
 from app.models.vqa.preprocessing import validate_image_representation, prepare_image
 
@@ -30,7 +31,7 @@ class VQAService:
 
         # Step 2: Image Preparation
         try:
-            image_path = prepare_image(image_id, image_type, aoi)
+            image_path = await asyncio.to_thread(prepare_image, image_id, image_type, aoi)
             trace.append({"step": "image_preparation", "status": "success"})
         except Exception as e:
             trace.append({"step": "image_preparation", "status": "error"})

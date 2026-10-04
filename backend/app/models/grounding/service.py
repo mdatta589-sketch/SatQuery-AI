@@ -1,4 +1,5 @@
 import os
+import asyncio
 import logging
 from typing import List, Dict, Any, Tuple
 from app.schemas.evidence import EvidenceItem
@@ -42,7 +43,7 @@ class GroundingService:
         }
         
         try:
-            image_path = prepare_image(image_id, image_type)
+            image_path = await asyncio.to_thread(prepare_image, image_id, image_type)
             
             evidence_items, execution_trace = await self.provider.get_evidence(
                 image_path=image_path,

@@ -89,11 +89,17 @@ def get_aoi_window_and_transform(src, aoi: dict):
     from rasterio.windows import from_bounds
     from fastapi import HTTPException
     
-    if aoi['west'] == aoi['east'] or aoi['south'] == aoi['north']:
+    bbox = aoi.get('bbox', aoi) if isinstance(aoi, dict) else aoi
+    if 'west' not in bbox and hasattr(aoi, 'bbox'):
+        # Just in case it's an object with bbox attribute
+        pass # Handle gracefully below if needed
+    
+    if bbox.get('west') == bbox.get('east') or bbox.get('south') == bbox.get('north'):
         raise HTTPException(status_code=400, detail="Point AOI cannot be used for NDVI. Please select a rectangle or polygon.")
         
     # aoi must have west, south, east, north in EPSG:4326
-    wgs84_bounds = [aoi['west'], aoi['south'], aoi['east'], aoi['north']]
+    bbox = aoi.get('bbox', aoi) if isinstance(aoi, dict) else aoi
+    wgs84_bounds = [bbox['west'], bbox['south'], bbox['east'], bbox['north']]
     try:
         target_bounds = transform_bounds('EPSG:4326', src.crs, *wgs84_bounds)
     except Exception as e:

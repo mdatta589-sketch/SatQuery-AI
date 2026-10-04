@@ -12,6 +12,9 @@ let drawnItems = null; // LayerGroup for drawn features
 let vqaEvidenceLayer = null; // LayerGroup for VQA grounding evidence
 let currentAOI = null; // Current Area of Interest
 let changeAnalysisMode = "live";
+let changeBeforeLayer = null;
+let changeAfterLayer = null;
+let changeOverlayLayer = null;
 let caseStudyBeforeScene = null;
 let caseStudyAfterScene = null;
 let caseStudyBeforeLayer = null;
@@ -36,7 +39,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // FORCE case study selectors to be visible immediately
     const selectors = document.getElementById('change-analysis-selectors');
     const msg = document.getElementById('change-analysis-message');
-    if (selectors) selectors.style.display = 'flex';
+    if (selectors) selectors.style.display = 'block';
+    const cmSelectors = document.getElementById('cross-modal-selectors');
+    if (cmSelectors) cmSelectors.style.display = 'block';
     if (msg) msg.style.display = 'none';
 
 });
@@ -1301,7 +1306,7 @@ Status: ${exec.status || 'success'}
                     }
                     
                 } else if (task === 'ndvi') {
-                    if (!currentLayer || !currentLayer.is_stac) throw new Error("NDVI requires Sentinel-2 Red (B04) and Near-Infrared (B08) bands.");
+                    if (!currentLayer || !currentLayer.is_stac) throw new Error("NDVI requires Sentinel-2 Red (B04) and Near-Infrared (B08) bands. Please load a Sentinel-2 image first.");
                     
                     document.getElementById('header-status').textContent = 'RUNNING NDVI ANALYSIS...';
                     const source_type = currentLayer.is_stac ? 'stac' : 'local';
@@ -1310,25 +1315,74 @@ Status: ${exec.status || 'success'}
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ scene_id: currentLayer.id, source_type: source_type, aoi: aoiData })
                     });
+                    
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.detail || errData.message || errData.error || 'Unknown error');
+                    }
                     data = await res.json();
                     
-                    if (data.status === 'success') {
-                        ansText = `NDVI Analysis completed successfully.
-Mean NDVI: ${data.mean_ndvi ? data.mean_ndvi.toFixed(3) : 'N/A'}`;
-                        const resultId = data.result_id;
-                        const renderUrl = `http://127.0.0.1:8000/api/v1/analysis/render?result_id=${resultId}&colormap=RdYlGn`;
-                        
-                        if (currentLayer) {
-                            currentLayer.is_analysis = true;
-                            currentLayer.analysis_data = {
-                                analysis: 'NDVI',
-                                result_id: resultId
-                            };
-                            updateMapLayer(currentLayer, renderUrl);
+                    const stats = data.statistics || {};
+                    const mean_val = stats.mean || 0.0;
+                    
+                    let mean_desc = "indicating very low or no vegetation";
+                    if (mean_val > 0.6) mean_desc = "indicating dense, healthy vegetation";
+                    else if (mean_val > 0.3) mean_desc = "indicating moderate vegetation";
+                    else if (mean_val > 0.1) mean_desc = "indicating sparse vegetation";
+                    
+                    ansText = `<div style="font-family: sans-serif; line-height: 1.5; font-size: 13px;">
+<strong>NDVI ANALYSIS</strong><br><br>
+<strong>Mean NDVI:</strong><br>${mean_val.toFixed(3)}<br><br>
+<strong>Minimum:</strong><br>${(stats.min || 0).toFixed(3)}<br><br>
+<strong>Maximum:</strong><br>${(stats.max || 0).toFixed(3)}<br><br>
+<strong>Median:</strong><br>${(stats.median || 0).toFixed(3)}<br><br>
+<strong>Valid Pixels:</strong><br>${(stats.valid_pixel_count || 0).toLocaleString()}<br><br>
+<strong>Vegetation Pixels:</strong><br>${(stats.vegetation_area_percentage || 0).toFixed(1)}% of valid area<br><br>
+<strong>Interpretation:</strong><br>
+NDVI analysis completed. The selected AOI has a mean NDVI of ${mean_val.toFixed(2)}, ${mean_desc}. Approximately ${(stats.vegetation_area_percentage || 0).toFixed(1)}% of valid pixels have NDVI &ge; 0.40.<br><br>
+<strong>Execution:</strong><br>
+Task: ndvi<br>
+Model: NDVI spectral analysis<br>
+Provider: local<br>
+Status: success
+</div>`;
+                    
+                    data.execution = { task: 'ndvi', model: 'NDVI spectral analysis', provider: 'local', status: 'success' };
+                    
+                    const urlParts = data.image_url.split('/');
+                    const resultId = urlParts[urlParts.length - 2];
+                    
+                    // Create layer
+                    const datasetMeta = {
+                        id: `analysis:ndvi:${data.scene_id}`,
+                        name: `NDVI - ${data.scene_id.includes('_') ? data.scene_id.split('_')[2].split('T')[0] : data.scene_id.substring(0, 8)}`,
+                        is_stac: false,
+                        is_analysis: true,
+                        source_layer_name: currentLayer.name,
+                        analysis_data: data,
+                        bounds: data.bounds,
+                        preview_url: data.image_url,
+                        bands: [{ id: 'NDVI', description: 'Vegetation Index' }],
+                        metadata: {
+                            crs: 'EPSG:4326',
+                            source_crs: currentLayer.metadata.source_crs || currentLayer.metadata.crs,
+                            resolution: currentLayer.metadata.resolution,
+                            dtype: 'float32',
+                            driver: 'Analysis'
                         }
+                    };
+                    
+                    const existingIndex = layers.findIndex(l => l.id === datasetMeta.id);
+                    if (existingIndex >= 0) {
+                        layers[existingIndex] = datasetMeta;
                     } else {
-                        ansText = `NDVI Analysis failed: ${data.message || data.error || 'Unknown error'}`;
+                        layers.push(datasetMeta);
                     }
+                    clearLayerList();
+                    layers.forEach(addLayerToList);
+                    updateNoDataState();
+                    selectLayer(datasetMeta.id);
+                
                     
                 } else if (task === 'grounding' || task === 'vqa') {
                     ctx = getVqaContext();
@@ -1587,6 +1641,18 @@ ${errMsg}`;
                 const KANCHA_AOI = [[17.41, 78.32], [17.45, 78.36]];
                 map.fitBounds(KANCHA_AOI, { padding: [40, 40] });
                 map.invalidateSize(true);
+            } else {
+                if (changeAfterLayer) map.removeLayer(changeAfterLayer);
+                if (changeOverlayLayer) map.removeLayer(changeOverlayLayer);
+                if (changeBeforeLayer) {
+                    changeBeforeLayer.addTo(map);
+                    changeBeforeLayer.bringToFront();
+                }
+                if (window.changeLegendControl) map.removeControl(window.changeLegendControl);
+                const beforeId = document.getElementById('change-before-select').value;
+                const bLayerData = layers.find(l => l.id === beforeId);
+                const vqaLabel = document.getElementById('vqa-selected-image-panel');
+                if (vqaLabel && bLayerData) vqaLabel.textContent = `Before: ${bLayerData.name}`;
             }
         });
     }
@@ -1609,6 +1675,18 @@ ${errMsg}`;
                 const KANCHA_AOI = [[17.41, 78.32], [17.45, 78.36]];
                 map.fitBounds(KANCHA_AOI, { padding: [40, 40] });
                 map.invalidateSize(true);
+            } else {
+                if (changeBeforeLayer) map.removeLayer(changeBeforeLayer);
+                if (changeOverlayLayer) map.removeLayer(changeOverlayLayer);
+                if (changeAfterLayer) {
+                    changeAfterLayer.addTo(map);
+                    changeAfterLayer.bringToFront();
+                }
+                if (window.changeLegendControl) map.removeControl(window.changeLegendControl);
+                const afterId = document.getElementById('change-after-select').value;
+                const aLayerData = layers.find(l => l.id === afterId);
+                const vqaLabel = document.getElementById('vqa-selected-image-panel');
+                if (vqaLabel && aLayerData) vqaLabel.textContent = `After: ${aLayerData.name}`;
             }
         });
     }
@@ -1634,6 +1712,19 @@ ${errMsg}`;
                 const KANCHA_AOI = [[17.41, 78.32], [17.45, 78.36]];
                 map.fitBounds(KANCHA_AOI, { padding: [40, 40] });
                 map.invalidateSize(true);
+            } else {
+                if (changeBeforeLayer) map.removeLayer(changeBeforeLayer);
+                if (changeAfterLayer) {
+                    changeAfterLayer.addTo(map);
+                    changeAfterLayer.bringToFront();
+                }
+                if (changeOverlayLayer) {
+                    changeOverlayLayer.addTo(map);
+                    changeOverlayLayer.bringToFront();
+                    if (window.changeLegendControl) window.changeLegendControl.addTo(map);
+                }
+                const vqaLabel = document.getElementById('vqa-selected-image-panel');
+                if (vqaLabel) vqaLabel.textContent = "Change Analysis";
             }
         });
     }
@@ -1856,6 +1947,7 @@ async function loadStacScene(scene) {
         selectLayer(datasetMeta.id);
         document.getElementById('header-status').textContent = `STAC Scene loaded: ${datasetMeta.name}`;
         updateAnalysisSceneDropdown();
+        updateChangeAnalysisDropdowns();
     } catch (e) {
         console.error(e);
         document.getElementById('header-status').textContent = `Error loading scene: ${e.message}`;
@@ -2075,7 +2167,8 @@ function activateKanchaCaseStudy() {
         });
         
         document.getElementById('change-analysis-message').style.display = 'none';
-        document.getElementById('change-analysis-selectors').style.display = 'flex';
+        document.getElementById('change-analysis-selectors').style.display = 'block';
+        document.getElementById('cross-modal-selectors').style.display = 'block';
     });
 }
 
@@ -2090,7 +2183,9 @@ function updateChangeAnalysisDropdowns() {
     const stacLayers = layers.filter(l => l.is_stac);
     if (stacLayers.length >= 2) {
         if (msg) msg.style.display = 'none';
-        if (selectors) selectors.style.display = 'flex';
+        if (selectors) selectors.style.display = 'block';
+    const cmSelectors = document.getElementById('cross-modal-selectors');
+    if (cmSelectors) cmSelectors.style.display = 'block';
         
         const bVal = beforeSel.value;
         const aVal = afterSel.value;
@@ -2106,6 +2201,8 @@ function updateChangeAnalysisDropdowns() {
         if (aVal && stacLayers.some(l => l.id === aVal)) afterSel.value = aVal;
     } else {
         if (msg) msg.style.display = 'none';
-        if (selectors) selectors.style.display = 'flex';
+        if (selectors) selectors.style.display = 'block';
+    const cmSelectors = document.getElementById('cross-modal-selectors');
+    if (cmSelectors) cmSelectors.style.display = 'block';
     }
 }

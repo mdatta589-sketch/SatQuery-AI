@@ -103,8 +103,9 @@ class ChangeService:
                 from rasterio.windows import from_bounds, Window
                 from rasterio.warp import transform_bounds
                 
-                if aoi and "west" in aoi:
-                    left, bottom, right, top = aoi["west"], aoi["south"], aoi["east"], aoi["north"]
+                bbox = aoi.get('bbox', aoi) if isinstance(aoi, dict) else (aoi or {})
+                if bbox and "west" in bbox:
+                    left, bottom, right, top = bbox["west"], bbox["south"], bbox["east"], bbox["north"]
                     src_left, src_bottom, src_right, src_top = transform_bounds("EPSG:4326", src_b.crs, left, bottom, right, top)
                     
                     window = from_bounds(src_left, src_bottom, src_right, src_top, transform=src_b.transform)
